@@ -1,0 +1,3 @@
+[submodule "src/grails.org"]
+	path = src/grails.org
+	url = https://github.com/grails/grails-doc
