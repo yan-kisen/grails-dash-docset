@@ -1,12 +1,14 @@
 module.exports = function (grunt) {
 
-  var docsetPath = 'ExpressJS.docset/Contents';
+  var docsetPath = 'grails.docset/Contents';
   var docsetPathPlist = docsetPath + '/Info.plist';
   var docsetPathDB    = docsetPath + '/Resources/docSet.dsidx';
   var docsetPathDocs  = docsetPath + '/Resources/Documents/';
-  var srcPath = 'src/expressjs.com/';
+  // var srcPath = 'src/grails.org/';
+  var srcPath = 'snapshots/';
 
   grunt.loadNpmTasks('grunt-contrib-clean');
+  grunt.loadNpmTasks('grunt-html-snapshot');
   grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-dom-munger');
 
@@ -19,13 +21,14 @@ module.exports = function (grunt) {
       },
       docs: {
         files: [
-          {src: srcPath + 'style.css', dest: docsetPathDocs + 'style.css'},
-          {
-            expand: true,
-            src: srcPath + 'images/*',
-            dest: docsetPathDocs + 'images/',
-            flatten: true
-          }
+          {expand: true, src: [srcPath+'/**'], dest: docsetPathDocs}, // includes files in path and its subdirs
+          // {src: srcPath + 'style.css', dest: docsetPathDocs + 'style.css'},
+          // {
+          //   expand: true,
+          //   src: srcPath + 'images/*',
+          //   dest: docsetPathDocs + 'images/',
+          //   flatten: true
+          // }
         ]
       }
     },
@@ -40,15 +43,46 @@ module.exports = function (grunt) {
             });
           }
         },
-        src: srcPath + 'api.html',
-        dest: docsetPathDocs + 'api.html'
+        src: srcPath + 'single.html',
+        dest: docsetPathDocs + 'single.html'
       }
-    }
+    },
+     htmlSnapshot: {
+                all: {
+                  options: {
+                    //that's the path where the snapshots should be placed
+                    //it's empty by default which means they will go into the directory
+                    //where your Gruntfile.js is placed
+                    snapshotPath: 'snapshots/',
+                    //This should be either the base path to your index.html file
+                    //or your base URL. Currently the task does not use it's own
+                    //webserver. So if your site needs a webserver to be fully
+                    //functional configure it here.
+                    sitePath: 'http://grails.org/doc/2.2.2/guide/',
+                    //you can choose a prefix for your snapshots
+                    //by default it's 'snapshot_'
+                    fileNamePrefix: 'sp_',
+                    //by default the task waits 500ms before fetching the html.
+                    //this is to give the page enough time to to assemble itself.
+                    //if your page needs more time, tweak here.
+                    msWaitForPages: 1000,
+                    //if you would rather not keep the script tags in the html snapshots
+                    //set `removeScripts` to true. It's false by default
+                    removeScripts: true,
+                    // allow to add a custom attribute to the body
+                    bodyAttr: 'data-prerendered',
+                    //here goes the list of all urls that should be fetched
+                    urls: [
+                      'single.html',
+                    ]
+                  }
+                }
+            }
   };
 
   grunt.initConfig(config);
 
-  // Update submodule for expressjs.com site
+  // Update submodule for grails.org site
   grunt.loadNpmTasks('grunt-update-submodules');
   grunt.registerTask('update', ['update_submodules']);
 
@@ -65,7 +99,7 @@ module.exports = function (grunt) {
     var idxGroups;
 
     // Read the API file and get out the links we want
-    var apiHtml = fs.readFileSync(srcPath + 'api.html');
+    var apiHtml = fs.readFileSync(srcPath + 'single.html');
     var $ = cheerio.load(apiHtml);
     idxGroups = $('#menu > li').map(function () {
       var $li = $(this);
@@ -135,7 +169,7 @@ module.exports = function (grunt) {
         return {
           name: data.name,
           type: data.type,
-          path: 'api.html' + data.link
+          path: 'single.html' + data.link
         };
       };
 
@@ -151,7 +185,8 @@ module.exports = function (grunt) {
   });
 
   // Main task
-  grunt.registerTask('generate', ['update', 'copy:meta', 'copy:docs', 'dom_munger:api', 'index']);
+  //grunt.registerTask('generate', ['update', 'copy:meta', 'copy:docs', 'dom_munger:api', 'index']);
+  grunt.registerTask('generate', ['htmlSnapshot:all', 'copy:meta', 'copy:docs', 'dom_munger:api', 'index']);
   grunt.registerTask('default', ['generate']);
 
 };
