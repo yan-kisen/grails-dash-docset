@@ -13,6 +13,7 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-dom-munger');
 
   var config = {
+    //clean: [docsetPath + '/*', srcPath + '/*'],
     clean: [docsetPath + '/*'],
     copy: {
       meta: {
@@ -35,7 +36,8 @@ module.exports = function (grunt) {
     dom_munger: {
       api: {
         options: {
-          remove: 'script, nav.clearfix, #menu',
+          //remove: 'script, nav.clearfix, #menu',
+          remove: 'script, nav.clearfix',
           callback: function ($) {
             // Convert relative protocol links to explicit http
             $('link[href^="//"]').attr('href', function (i, oldHref) {
@@ -43,7 +45,7 @@ module.exports = function (grunt) {
             });
           }
         },
-        src: srcPath + 'single.html',
+        src: srcPath + 'grails_single.html',
         dest: docsetPathDocs + 'single.html'
       }
     },
@@ -58,22 +60,22 @@ module.exports = function (grunt) {
                     //or your base URL. Currently the task does not use it's own
                     //webserver. So if your site needs a webserver to be fully
                     //functional configure it here.
-                    sitePath: 'http://grails.org/doc/2.2.2/guide/',
+                    sitePath: 'http://grails.org/doc/2.2.2/guide/single.html',
                     //you can choose a prefix for your snapshots
                     //by default it's 'snapshot_'
-                    fileNamePrefix: 'sp_',
+                    fileNamePrefix: 'grails_',
                     //by default the task waits 500ms before fetching the html.
                     //this is to give the page enough time to to assemble itself.
                     //if your page needs more time, tweak here.
-                    msWaitForPages: 1000,
+                    msWaitForPages: 5000,
                     //if you would rather not keep the script tags in the html snapshots
                     //set `removeScripts` to true. It's false by default
-                    removeScripts: true,
+                    removeScripts: false,
                     // allow to add a custom attribute to the body
                     bodyAttr: 'data-prerendered',
                     //here goes the list of all urls that should be fetched
                     urls: [
-                      'single.html',
+                      '',
                     ]
                   }
                 }
@@ -99,36 +101,60 @@ module.exports = function (grunt) {
     var idxGroups;
 
     // Read the API file and get out the links we want
-    var apiHtml = fs.readFileSync(srcPath + 'single.html');
+    var apiHtml = fs.readFileSync(srcPath + 'grails_single.html');
     var $ = cheerio.load(apiHtml);
-    idxGroups = $('#menu > li').map(function () {
-      var $li = $(this);
+    idxGroups = $('.menu-item > a').map(function () {      
+      var link = $(this);
+
+      var topmenu = link.parent().parent().prev()
+
+        var commands = {
+            type: 'Command',
+            name: link.text(),
+            link: link.attr('href')
+          }
+
+      // if (topmenu.attr('text') == "Command Line") {
+      //   //make it into a command 
+      //   var commands = {
+      //       type: 'Command',
+      //       name: link.text(),
+      //       link: link.attr('href')
+      //     }
+      //     console.log(commands)
+      // }
+
+
       // Any top-level links are groups
-      var $link = $li.children('a');
-      var group = {
-        type: 'Guide',
-        name: $link.text(),
-        link: '#' + $link.text().toLowerCase(), // The links point to a method anchor, use the group anchor instead
-        children: []
-      };
+      // var $link = $li.children('a');
 
-      // Find all methods in this group
-      group.children = _.flatten($li.find('ul > li').map(function () {
-        var $link = $(this).children('a');
-        var name = $link.text();
-        var isMethod = reEndParens.test(name);
-        var type = isMethod ? 'Function' : 'Property';
-        if (isMethod) {
-          name = name.replace(reEndParens, '');
-        }
-        return {
-          type: type,
-          name: name,
-          link: $link.attr('href')
-        };
-      }));
 
-      return group;
+
+
+      // var group = {
+      //   type: 'Guide',
+      //   name: $link.text(),
+      //   link: '#' + $link.text().toLowerCase(), // The links point to a method anchor, use the group anchor instead
+      //   children: []
+      // };
+
+      // // Find all methods in this group
+      // group.children = _.flatten($li.find('ul > li').map(function () {
+      //   var $link = $(this).children('a');
+        // var name = $link.text();
+      //   var isMethod = reEndParens.test(name);
+      //   var type = isMethod ? 'Function' : 'Property';
+      //   if (isMethod) {
+      //     name = name.replace(reEndParens, '');
+      //   }
+      //   return {
+      //     type: type,
+      //     name: name,
+      //     link: $link.attr('href')
+      //   };
+      // }));
+
+      return commands;
     });
 
     // Create database file
@@ -169,15 +195,15 @@ module.exports = function (grunt) {
         return {
           name: data.name,
           type: data.type,
-          path: 'single.html' + data.link
+          path: data.link
         };
       };
 
-      var rows = _.flatten(_.map(idxGroups, function (group) {
-        return [group].concat(group.children);
-      }));
+      // var rows = _.flatten(_.map(idxGroups, function (group) {
+      //   return [group].concat(group.children);
+      // }));
 
-      table.bulkCreate(_.map(rows, buildRowData))
+      table.bulkCreate(_.map(idxGroups, buildRowData))
         .success(gruntDone)
         .error(errorHandler);
 
@@ -186,7 +212,8 @@ module.exports = function (grunt) {
 
   // Main task
   //grunt.registerTask('generate', ['update', 'copy:meta', 'copy:docs', 'dom_munger:api', 'index']);
-  grunt.registerTask('generate', ['htmlSnapshot:all', 'copy:meta', 'copy:docs', 'dom_munger:api', 'index']);
+  // grunt.registerTask('generate', ['htmlSnapshot:all', 'copy:meta', 'copy:docs', 'dom_munger:api', 'index']);
+  grunt.registerTask('generate', ['copy:meta', 'copy:docs', 'dom_munger:api', 'index']);
   grunt.registerTask('default', ['generate']);
 
 };
