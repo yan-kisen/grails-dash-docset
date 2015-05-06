@@ -5,12 +5,12 @@
 	<key>CFBundleIdentifier</key>
 	<string>grails</string>
 	<key>CFBundleName</key>
-	<string>grails.org</string>
+	<string>grails 2-3-11 - Guide</string>
 	<key>DocSetPlatformFamily</key>
 	<string>grails</string>
 	<key>isDashDocset</key>
 	<true/>
 	<key>dashIndexFilePath</key>
-	<string>single.html</string>
+	<string>snapshots/grails_single.html</string>
 </dict>
 </plist>
